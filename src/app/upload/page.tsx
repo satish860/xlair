@@ -9,20 +9,26 @@ type DataSet = { [index: string]: WorkSheet };
 type Row = any[];
 type AOAColumn = Column<Row>;
 type RowCol = { rows: Row[]; columns: AOAColumn[] };
+type PropertyTypes = { [key: string]: Set<string> };
 
-const getRowsCols = (data: DataSet, sheetName: string): RowCol => ({
-  rows: utils.sheet_to_json<Row>(data[sheetName], { header: 1 }),
-  columns: Array.from(
-    {
-      length: utils.decode_range(data[sheetName]["!ref"] || "A1").e.c + 1,
-    },
-    (_, i) => ({
-      key: String(i),
-      name: utils.encode_col(i),
-      editor: textEditor,
-    })
-  ),
-});
+const getPropertyTypes = (jsonArray: any[]): PropertyTypes => {
+    const propertyTypes: PropertyTypes = {};
+  
+    jsonArray.forEach((obj) => {
+      Object.keys(obj).forEach((key) => {
+        const value = obj[key];
+        if (typeof value !== 'undefined') {
+          propertyTypes[key] = propertyTypes[key] || new Set();
+          propertyTypes[key].add(typeof value);
+        }
+      });
+    });
+  
+    return propertyTypes;
+  };
+  
+
+
 
 export default function Upload() {
   async function handleAB(file: ArrayBuffer): Promise<void> {
@@ -34,6 +40,8 @@ export default function Upload() {
     /* update workbook state */
     const new_rows = utils.sheet_to_json<Row>(worksheet, { header: 1 });
     console.log(new_rows[0]);
+    const propertyTypes = getPropertyTypes(new_rows.slice(1));
+    console.log(propertyTypes);
   }
 
   async function handleFile(ev: ChangeEvent<HTMLInputElement>): Promise<void> {
